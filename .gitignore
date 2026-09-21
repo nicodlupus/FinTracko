@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# FinTracko data — never commit these
+*.ftdb
+*.fintracko
+data/
+snapshots/
+exports/
+
+# macOS
+.DS_Store
