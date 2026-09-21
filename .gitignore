@@ -11,5 +11,11 @@ data/
 snapshots/
 exports/
 
+# dbt
+transform/target/
+transform/dbt_packages/
+transform/logs/
+*.duckdb
+
 # macOS
 .DS_Store

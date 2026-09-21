@@ -1,0 +1,20 @@
+name: fintracko
+version: "1.0.0"
+config-version: 2
+
+profile: fintracko
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  fintracko:
+    staging:
+      +materialized: view
+    # intermediate/marts configs land here once those folders have models
+    # (Phase 4+) -- dbt warns on config paths with nothing under them yet.

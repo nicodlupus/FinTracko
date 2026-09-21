@@ -1,0 +1,20 @@
+# Local dbt profile. Points DuckDB at the two .ftdb files (SQLite) via the
+# sqlite extension, attached read-only -- dbt never writes back into the
+# entry layer, only reads from it.
+#
+# FTDB_DIR lets `make refresh` point this at a different data directory
+# (e.g. the real iCloud path once Phase 0 storage lands) without editing
+# this file; it defaults to the local dev fixture under ../data.
+fintracko:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('FTDB_WAREHOUSE', '../data/warehouse.duckdb') }}"
+      extensions:
+        - sqlite
+      attach:
+        - path: "{{ env_var('FTDB_DIR', '../data/environments') }}/current.ftdb"
+          type: sqlite
+          alias: current
+          read_only: true

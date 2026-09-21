@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: current
+    database: current
+    schema: main
+    tables:
+      - name: _ft_table
+      - name: _ft_field
+      - name: _ft_choice
+      - name: _ft_target
+      - name: _ft_rate
