@@ -32,7 +32,7 @@ from app.catalog.validate import (
 )
 
 
-def _column_ddl_for_field(sql_name: str, type_: str, *, required: bool, expr: str | None) -> list[str]:
+def column_ddl_for_field(sql_name: str, type_: str, *, required: bool, expr: str | None) -> list[str]:
     """One field spec -> one or more physical column definitions."""
     not_null = " NOT NULL" if required else ""
 
@@ -72,7 +72,7 @@ def build_create_table_sql(table_sql_name: str, field_specs: list[dict[str, Any]
     ]
     for spec in field_specs:
         columns.extend(
-            _column_ddl_for_field(
+            column_ddl_for_field(
                 spec["sql_name"],
                 spec["type"],
                 required=spec.get("required", False),
