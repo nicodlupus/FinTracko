@@ -16,6 +16,8 @@ SCHEMA_VERSION = 1
 
 TABLE_KINDS = ("income", "obligation", "expense", "ledger")
 ENV_KINDS = ("current", "forecast")
+FIELD_TYPES = ("date", "text", "number", "money", "choice", "computed")
+FIELD_ROLES = ("amount", "date", "choice", "none")
 
 # ddl builder
 _DDL = """
@@ -38,6 +40,80 @@ CREATE TABLE IF NOT EXISTS _ft_table (
 CREATE UNIQUE INDEX IF NOT EXISTS ix_ft_table_name_live ON _ft_table (name) WHERE deleted_at IS NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS ix_ft_table_sqlname_live ON _ft_table (sql_name) WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS _ft_field (
+    id INTEGER PRIMARY KEY,
+    table_id INTEGER NOT NULL REFERENCES _ft_table(id),
+    name TEXT NOT NULL,
+    sql_name TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('date', 'text', 'number', 'money', 'choice', 'computed')),
+    role TEXT NOT NULL DEFAULT 'none' CHECK (role IN ('amount', 'date', 'choice', 'none')),
+    required INTEGER NOT NULL DEFAULT 0,
+    position INTEGER NOT NULL DEFAULT 0,
+    default_value TEXT,
+    deleted_at TEXT
+);
+
+-- field name unique within its table, ignoring soft-deleted rows
+CREATE UNIQUE INDEX IF NOT EXISTS ix_ft_field_name_live
+    ON _ft_field (table_id, name) WHERE deleted_at IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ix_ft_field_sqlname_live
+    ON _ft_field (table_id, sql_name) WHERE deleted_at IS NULL;
+
+-- at most one 'amount' field and one 'date' field per table (live rows only)
+CREATE UNIQUE INDEX IF NOT EXISTS ix_ft_field_one_amount_role
+    ON _ft_field (table_id) WHERE role = 'amount' AND deleted_at IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS ix_ft_field_one_date_role
+    ON _ft_field (table_id) WHERE role = 'date' AND deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS _ft_choice (
+    id INTEGER PRIMARY KEY,
+    field_id INTEGER NOT NULL REFERENCES _ft_field(id),
+    label TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0,
+    funds_table_id INTEGER REFERENCES _ft_table(id),
+    deleted_at TEXT
+);
+
+-- choice label unique within its field, ignoring soft-deleted rows
+CREATE UNIQUE INDEX IF NOT EXISTS ix_ft_choice_label_live
+    ON _ft_choice (field_id, label) WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS _ft_computed (
+    field_id INTEGER PRIMARY KEY REFERENCES _ft_field(id),
+    expr TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS _ft_target (
+    table_id INTEGER PRIMARY KEY REFERENCES _ft_table(id),
+    total_due REAL NOT NULL,
+    currency TEXT NOT NULL,
+    as_of TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS _ft_rate (
+    code TEXT NOT NULL,
+    rate_to_base REAL NOT NULL,
+    as_of TEXT NOT NULL,
+    PRIMARY KEY (code, as_of)
+);
+
+CREATE TABLE IF NOT EXISTS _ft_audit (
+    id INTEGER PRIMARY KEY,
+    ts TEXT NOT NULL,
+    sql_name TEXT NOT NULL,
+    row_id INTEGER NOT NULL,
+    op TEXT NOT NULL CHECK (op IN ('insert', 'update', 'delete')),
+    before_json TEXT,
+    after_json TEXT
+);
+
+CREATE TABLE IF NOT EXISTS _ft_migration (
+    version INTEGER PRIMARY KEY,
+    applied_at TEXT NOT NULL
+);
 """
 
 def utcnow() -> str:
